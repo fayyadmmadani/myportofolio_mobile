@@ -144,6 +144,8 @@ class ItemCard extends StatelessWidget {
             ..showSnackBar(
               SnackBar(
                 content: Text("Kamu telah menekan tombol ${item.name}!"),
+                backgroundColor: item.color,
+                behavior: SnackBarBehavior.floating,
               ),
             );
         },
