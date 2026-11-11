@@ -11,6 +11,9 @@ class MyHomePage extends StatelessWidget {
     ItemHomepage("Lihat Proyek", Icons.folder, Colors.blueGrey.shade400),
     ItemHomepage("Tambah Proyek", Icons.add_circle, Colors.lightBlue.shade600),
     ItemHomepage("Logout", Icons.logout, Colors.red.shade600),
+    ItemHomepage("Lihat Skill", Icons.folder, Colors.indigo.shade400),
+    ItemHomepage("Lihat Experience", Icons.folder, Colors.deepOrangeAccent.shade400),
+    ItemHomepage("Lihat Education", Icons.folder, Colors.purpleAccent.shade400),
   ];
 
   @override
@@ -26,13 +29,14 @@ class MyHomePage extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       // Body halaman utama dengan padding di sekelilingnya.
-      body: Padding(
+      body: SingleChildScrollView(
+        child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Baris horizontal untuk menampilkan 3 InfoCard secara sejajar.
-            Row(
+            // Mengurutkan dalam satu kolom
+            Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 InfoCard(title: 'NPM', content: npm),
@@ -60,7 +64,8 @@ class MyHomePage extends StatelessWidget {
 
                   // GridView menampilkan kartu tombol dalam tata letak kisi 3 kolom.
                   GridView.count(
-                    primary: true,
+                    primary: false,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(20),
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
@@ -77,6 +82,7 @@ class MyHomePage extends StatelessWidget {
           ],
         ),
       ),
+      )
     );
   }
 }
@@ -103,7 +109,7 @@ class InfoCard extends StatelessWidget {
       elevation: 2.0,
       child: Container(
         // Menyesuaikan lebar kartu dengan proporsi layar (dibagi 3.5).
-        width: MediaQuery.of(context).size.width / 3.5,
+        width: double.infinity,
         padding: const EdgeInsets.all(16.0),
         // Menyusun teks title dan content secara vertikal.
         child: Column(
