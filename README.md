@@ -39,76 +39,85 @@ flutter analyze
 flutter test
 ```
 
-### Tugas 7
+### Tugas 8
 
-1. **Jelaskan apa yang dimaksud dengan *widget tree* pada Flutter dan bagaimana hubungan induk-anak (*parent-child*) bekerja antar-widget!**  
-   *Widget tree* adalah struktur hierarki berformat pohon objek yang merepresentasikan seluruh elemen visual, struktur tata letak (*layout*), hingga aturan gaya (*styling*) pada aplikasi Flutter. Di Flutter, hampir segala sesuatu adalah widget, mulai dari elemen struktural tingkat atas seperti `MaterialApp` dan `Scaffold`, hingga komponen terkecil seperti `Text` dan `Icon`.  
-   Hubungan induk-anak (*parent-child*) bekerja melalui mekanisme *constraints go down, sizes go up, parent sets position*:
-   - **Parent to Child**: Widget induk meneruskan batasan ukuran (*layout constraints* berupa lebar dan tinggi minimum serta maksimum) ke widget anak di bawahnya.
-   - **Child to Parent**: Widget anak menentukan ukuran geometrisnya sendiri di dalam batasan yang telah ditetapkan tersebut, lalu melaporkan ukurannya kembali ke widget induk.
-   - **Penempatan**: Widget induk bertanggung jawab menentukan posisi koordinat spasial anak (misalnya perataan horizontal pada `Row` atau vertikal pada `Column`). Selain itu, jika *state* pada widget induk mengalami pembaruan, Flutter akan memicu proses pembangunan ulang (*rebuild*) pada cabang *child tree* di bawahnya.
+1. **Jelaskan perbedaan antara `Navigator.push()`, `Navigator.pushReplacement()`, dan `Navigator.pop()`. Metode  
+   apa yang digunakan untuk membuka formulir dari kartu aksi? Jelaskan juga bagaimana opsi Home di drawer membawa  
+   pengguna kembali ke halaman utama.**
+   - **`Navigator.push()`**: Menambahkan (_push_) sebuah _route_ (halaman baru) ke bagian paling atas tumpukan  
+     (_stack_) navigasi. Halaman sebelumnya tetap tersimpan di dalam memori di bawahnya, sehingga pengguna dapat  
+     kembali ke halaman asal menggunakan tombol _Back_ bawaan sistem atau navigasi kembali programatis.
+   - **`Navigator.pushReplacement()`**: Menghapus _route_ yang sedang aktif di puncak _stack_ dan langsung
+     menggantikannya dengan _route_ baru. Stack navigasi tidak bertambah panjang, sehingga mencegah penumpukan  
+     halaman yang berulang (sangat ideal untuk navigasi menu drawer agar memori aplikasi tetap efisien).
+   - **`Navigator.pop()`**: Menghapus (_pop_) _route_ teratas dari _stack_ dan mengembalikan pengguna ke halaman  
+     yang tepat berada di bawahnya pada _stack_.
+   - **Metode pada Kartu Aksi**: Membuka formulir dari kartu aksi menggunakan **`Navigator.push()`**. Tujuannya  
+     agar pengguna dapat kembali ke halaman utama cukup dengan menekan tombol _Back_ perangkat atau tombol kembali  
+     peramban.
+   - **Opsi Home di Drawer**: Opsi Home menggunakan **`Navigator.pushReplacement()`** untuk menggantikan halaman  
+     formulir yang sedang aktif dengan instance `MyHomePage()`, sehingga tumpukan _route_ tidak membengkak dan alur  
+     kembali tetap bersih.
+   2. **Bagaimana susunan `Scaffold`, `AppBar`, dan `Drawer` membantu menjaga struktur halaman tetap konsisten?  
+      Berikan satu contoh penggunaan warna tema portofolio di lebih dari satu halaman.**
+      - **Konsistensi Struktur**: `Scaffold` bertindak sebagai kerangka arsitektur visual standar Material Design  
+        yang membagi tata letak menjadi zona-zona terprediksi (`appBar` di atas, `drawer` di samping, dan `body` di  
+        tengah). Dengan menggunakan `AppBar` dan `Drawer` yang seragam di setiap halaman (`MyHomePage`,
+        `ProjectFormPage`, dan `ExperienceFormPage`), pengguna disajikan hierarki visual, ikon menu hamburger, serta  
+        alur navigasi yang konsisten di mana pun mereka berada di dalam aplikasi.
+      - **Contoh Konsistensi Warna Tema**: Penggunaan warna `Colors.indigo` yang konsisten diterapkan sebagai warna  
+        dasar pada:
+        - Header `Drawer` (`BoxDecoration(color: Colors.indigo)` di `LeftDrawer`).
+        - Latar belakang `AppBar` pada halaman formulir proyek dan formulir pengalaman (`backgroundColor:
+Colors.indigo`).
+        - Latar belakang tombol utama Simpan (`ElevatedButton` dengan `WidgetStateProperty.all(Colors.indigo)`).
 
-2. **Sebutkan semua widget yang kamu gunakan dalam proyek ini dan jelaskan fungsinya masing-masing!**  
-   Berikut adalah seluruh widget yang digunakan dalam proyek ini:
-   - `MyApp` (`StatelessWidget`): Widget akar (*root bootstrap*) yang menginisialisasi konfigurasi tema dasar dan menentukan halaman awal aplikasi.
-   - `MaterialApp`: Widget pembungkus tingkat atas yang menyediakan fungsionalitas Material Design global, termasuk navigasi, lokalisasi, dan skema tema (`ThemeData`).
-   - `MyHomePage` (`StatelessWidget`): Halaman beranda utama yang menampung kartu profil informasi dan kisi tombol aksi portofolio.
-   - `Scaffold`: Kerangka struktur tata letak visual dasar yang menyediakan slot standar seperti `AppBar`, `body`, dan fasilitator `SnackBar`.
-   - `AppBar`: Bilah navigasi di bagian atas layar aplikasi yang menampilkan judul `MyPortfolio`.
-   - `Text`: Menampilkan string teks pada antarmuka dengan konfigurasi tipografi seperti ketebalan font (*fontWeight*), ukuran (*fontSize*), dan warna (*color*).
-   - `SingleChildScrollView`: Widget pembungkus yang memungkinkan seluruh konten pada `body` dapat digulir (*scrollable*), sekaligus mencegah terjadinya galat *overflow* pada layar beresolusi pendek.
-   - `Padding`: Memberikan jarak ruang kosong di sekeliling widget anaknya.
-   - `Column`: Menyusun widget-widget anaknya secara linear vertikal (dari atas ke bawah).
-   - `Center`: Memosisikan widget anak tepat di tengah-tengah ruang yang tersedia.
-   - `SizedBox`: Memberikan jarak pemisah dengan dimensi statis (tinggi/lebar) antar-elemen widget.
-   - `InfoCard` (`StatelessWidget`): Widget kustom modular untuk menampilkan identitas (NPM, Name, Class).
-   - `Card`: Menampilkan bidang kartu permukaan bergaya Material dengan kelengkungan sudut dan elevasi bayangan (*shadow*).
-   - `Container`: Wadah fleksibel untuk mengatur dimensi ukuran (`width: double.infinity`) dan *inner padding*.
-   - `GridView.count`: Menampilkan daftar kartu menu dalam tata letak kisi (*grid*) dua dimensi dengan pembagian jumlah kolom tertentu (`crossAxisCount: 3`).
-   - `ItemCard` (`StatelessWidget`): Widget kustom modular yang merepresentasikan tombol aksi portofolio.
-   - `Material`: Menyediakan kanvas Material Design untuk pewarnaan latar tombol (`color: item.color`) serta kelengkungan sudut (`borderRadius`).
-   - `InkWell`: Menambahkan interaktivitas sentuhan dengan efek animasi percikan tinta (*ripple effect*) ketika tombol kartu diklik.
-   - `Icon`: Menampilkan simbol grafis vektor dari pustaka Material Icons yang relevan dengan aksi menu.
-   - `SnackBar`: Menampilkan bilah notifikasi interaktif sementara di bagian bawah layar saat tombol ditekan.
+   3. **Mengapa tata letak tersebut dipilih untuk formulir? Jelaskan peran widget pengatur jarak dan widget
+      penggulir ketika ruang layar terbatas.**
+      - **Alasan Pemilihan Tata Letak**: Formulir disusun secara vertikal menggunakan widget `Column` di dalam
+        `Form` karena alur pengisian data manusiawi bergerak secara linier dari atas ke bawah (Nama $\rightarrow$  
+        Instansi $\rightarrow$ Tipe $\rightarrow$ Rentang Waktu $\rightarrow$ Deskripsi $\rightarrow$ Simpan).
+      - **Peran Widget Pengatur Jarak (`Padding` / `SizedBox`)**: Memberikan margin visual yang rapi dan memisahkan  
+        setiap kolom masukan agar tidak berhimpitan, sehingga pengguna dapat membedakan batas-batas bidang sentuh  
+        formulir dengan nyaman (_touch targets_ yang ergonomis).
+      - **Peran Widget Penggulir (`SingleChildScrollView`)**: Sangat krusial untuk mencegah galat _RenderFlex
+        overflowed_. Ketika pengguna mengetik, papan ketik virtual (_soft keyboard_) akan muncul dari bawah dan
+        menyita lebih dari separuh tinggi layar. `SingleChildScrollView` memastikan area formulir dapat digulir ke  
+        atas dan tombol Simpan tetap dapat dijangkau meskipun ruang pandang layar menjadi sangat sempit.
 
-3. **Apa fungsi dari widget `MaterialApp`? Jelaskan mengapa widget ini umumnya digunakan sebagai *root widget* pada aplikasi Flutter!**  
-   Widget `MaterialApp` berfungsi sebagai gerbang utama penyedia layanan arsitektur Material Design pada aplikasi. Widget ini menginisialisasi subsistem penting seperti:
-   - Sistem perutean dan navigasi (*Navigator*).
-   - Tema global aplikasi (*ThemeData* dan *ColorScheme*) yang dapat diakses oleh komponen turunannya melalui `Theme.of(context)`.
-   - Pengaturan lokalisasi, bahasa, dan arah pembacaan teks (*LTR/RTL*).
-   - Penyedia akses `MediaQuery` untuk dimensi perangkat dan `ScaffoldMessenger` untuk manajemen pesan pop-up.  
-   Widget ini umumnya digunakan sebagai *root widget* karena sebagian besar widget bawaan Flutter (seperti `Scaffold`, `AppBar`, `Card`, `InkWell`, dan dialog modal) mewajibkan keberadaan *InheritedWidget* Material di atas hierarki *tree*-nya. Tanpa adanya `MaterialApp` sebagai akar, pemanggilan widget-widget Material tersebut akan menimbulkan *runtime exception* karena ketiadaan konteks tema dan perutean yang valid.
+   4. **Apa peran `GlobalKey<FormState>`, `validator`, dan `validate()` saat tombol Simpan ditekan? Berikan satu  
+      contoh nilai yang ditolak oleh validasi dan jelaskan mengapa memilih jenis input atau papan ketik saja belum  
+      cukup.**
+      - **Peran Komponen Form**:
+        - `GlobalKey<FormState>`: Kunci identitas unik yang memberikan akses langsung ke _state_ internal dari
+          widget `Form` (`FormState`).
+        - `validate()`: Fungsi pada `FormState` yang dipanggil ketika tombol Simpan ditekan untuk memicu eksekusi  
+          seluruh fungsi `validator` pada setiap bidang input (`TextFormField`) di dalam form secara serempak.
+        - `validator`: Logika fungsi evaluasi pada masing-masing field yang menerima input pengguna (`String?
+value`) dan mengembalikan string pesan kesalahan jika data tidak sesuai aturan, atau `null` jika data valid.
+      - **Contoh Nilai yang Ditolak**: Nilai berupa string kosong atau hanya berisi spasi (`"   "`). Aturan validasi  
+        `value == null || value.trim().isEmpty` akan mendeteksi nilai tersebut dan mengembalikan pesan error seperti  
+        _"Nama instansi/perusahaan tidak boleh kosong!"_.
+      - **Mengapa Input/Keyboard Saja Belum Cukup**: Mengatur tipe keyboard (seperti `keyboardType:
+TextInputType.emailAddress` atau `number`) hanya sekadar mempermudah pengguna memilih karakter pada papan  
+        ketik, bukan mencegah masukan yang keliru. Pengguna tetap dapat memasukkan teks kosong, spasi acak, atau
+        karakter tidak sah melalui _copy-paste_. Oleh karena itu, logika validasi sisi aplikasi (`validator`) tetap  
+        mutlak diperlukan untuk menjamin integritas data sebelum diproses.
 
-4. **Jelaskan perbedaan antara `StatelessWidget` dan `StatefulWidget`! Kapan kita sebaiknya memilih `StatelessWidget` dan kapan harus menggunakan `StatefulWidget`?**  
-   - **Perbedaan**:
-     - `StatelessWidget` bersifat statis dan *immutable* (tidak dapat diubah). Seluruh properti dan konfigurasinya bernilai final saat diinisialisasi dan tidak memiliki memori internal untuk mempertahankan perubahan status selama masa hidupnya. Re-render hanya terjadi jika widget induknya membangun ulang (*rebuild*) widget tersebut.
-     - `StatefulWidget` bersifat dinamis dan memiliki objek `State` pendamping yang persisten (*mutable*). Objek `State` ini dapat menyimpan data dan status yang dapat dimutasi secara independen melalui pemanggilan `setState()`, yang memicu Flutter untuk merender ulang bagian UI yang terkait saja.
-   - **Kriteria Pemilihan**:
-     - Pilih `StatelessWidget` jika tampilan UI hanya mengonsumsi konfigurasi statis yang dioper dari luar dan tidak mengalami perubahan kondisi selama berinteraksi (misalnya teks statis, ikon, kartu info identitas, atau tombol navigasi sederhana).
-     - Pilih `StatefulWidget` jika komponen antarmuka membutuhkan penyimpanan status dinamis yang berubah akibat interaksi pengguna atau proses asinkronus (misalnya form input teks, *switch/checkbox*, *counter*, animasi interaktif, atau konsumsi data dari API).
+   ***
 
-5. **Apa itu `BuildContext` dan mengapa penting di Flutter? Bagaimana penggunaannya di dalam metode `build`?**  
-   - **Definisi**: `BuildContext` adalah referensi atau penanda posisi unik dari suatu widget di dalam hierarki *widget tree*. Setiap widget memiliki instance `BuildContext` tersendiri yang dikaitkan saat widget diubah menjadi objek elemen (*Element*).
-   - **Urgensi & Peran**: `BuildContext` sangat penting karena menjadi sarana komunikasi bagi sebuah widget untuk menelusuri pohon widget ke atas guna mengakses data dari widget leluhurnya (*ancestor widgets* / *InheritedWidget*). Contohnya adalah mengambil skema warna tema (`Theme.of(context)`), ukuran layar (`MediaQuery.of(context)`), hingga menampilkan pesan notifikasi (`ScaffoldMessenger.of(context)`).
-   - **Penggunaan dalam `build(BuildContext context)`**: Flutter meneruskan parameter `context` ke dalam metode `build` sebagai pintu masuk bagi pengembang untuk merender UI yang responsif dan kontekstual terhadap lingkungan induknya, memastikan widget anak berada di posisi yang benar di dalam pohon hierarki.
+   ### Pembaruan AI Disclosure (Tugas 8)
 
-6. **Jelaskan konsep *hot reload* di Flutter dan apa perbedaannya dengan *hot restart*! Kapan kita tidak bisa hanya mengandalkan *hot reload* dan harus melakukan *hot restart* atau *full restart*?**  
-   - **Hot Reload**: Fitur pengembangan cepat Flutter yang menyuntikkan (*inject*) berkas kode sumber yang baru disimpan langsung ke dalam memori Dart Virtual Machine (VM) yang sedang aktif tanpa mematikan aplikasi. Flutter hanya mengeksekusi ulang metode `build()` pada *tree* yang terdampak, sehingga perubahan visual langsung terlihat seketika (sub-detik) dengan tetap mempertahankan status aplikasi saat itu (*preserves app state*).
-   - **Perbedaan dengan Hot Restart**:
-     - *Hot Reload* tidak mengatur ulang variabel atau status aplikasi (*state-preserving*).
-     - *Hot Restart* menghancurkan seluruh memori status aplikasi, mengatur ulang seluruh variabel ke nilai awal, dan mengeksekusi kembali aplikasi dari fungsi `main()`.
-   - **Kapan Harus Hot Restart atau Full Restart**:
-     - **Harus Hot Restart**: Ketika mengubah inisialisasi variabel global/statis, memodifikasi konstruktor kelas, mengubah logika di dalam `initState()` pada `StatefulWidget`, atau merombak skema navigasi utama.
-     - **Harus Full Restart / Rebuild**: Ketika menambahkan dependensi atau aset baru pada `pubspec.yaml`, memodifikasi berkas konfigurasi *native platform* (seperti `AndroidManifest.xml`, `build.gradle`, atau runner iOS), atau ketika terjadi perubahan pada kode C/C++ pada *engine*.
+   Tools yang Digunakan: Gemini
 
-### AI Disclosure
+   Strategi Prompting:
+   - **Perencanaan Waktu & Dekonstruksi Tugas**: Meminta pembagian waktu pengerjaan yang terstruktur (time-boxed 60  
+     menit) per fase untuk Tugas 8 agar fokus pengerjaan tetap efisien dan sistematis.
+   - **Rancangan Entitas Model Baru**: Mengarahkan formulasi field formulir `ExperienceFormPage` dengan penambahan  
+     logika kondisional status "Masih Berlangsung" (`_isOngoing`) menggunakan `CheckboxListTile` yang secara dinamis  
+     menyembunyikan/menonaktifkan input tanggal selesai.
+   - **Formulasi Pertanyaan Reflektif**: Meminta bantuan sintesis konseptual untuk 4 pertanyaan reflektif Tugas 8  
+     berbasis implementasi kode aktual pada repositori.
 
-Tools: Gemini
-
-Strategi Prompting:
-- **Arsitektur Pewarnaan Modular**: Meminta panduan implementasi pewarnaan kartu tombol aksi yang bersih melalui modifikasi model data `ItemHomepage` tanpa menggunakan percabangan `if-else` manual.
-- **Restrukturisasi Layout & Solusi Overflow**: Meminta arahan dalam mengubah susunan `InfoCard` menjadi vertikal dengan lebar penuh (`double.infinity`), menambahkan 3 tombol aksi portofolio tambahan, serta menerapkan mitigasi galat *render overflow* menggunakan `SingleChildScrollView` dan isolasi `physics` pada `GridView`.
-- **Penyusunan Refleksi Teori & Dokumentasi**: Mengarahkan formulasi jawaban reflektif konseptual Flutter secara komprehensif serta penataan berkas `README.md` yang konsisten dengan standar repositori proyek myportofolio.
-
-Keterbatasan AI yang ditemukan:
-- AI tidak dapat mengevaluasi antarmuka secara visual langsung pada emulator atau chrome, sehingga kenyamanan tata letak, kesesuaian kontras palet warna, serta kelancaran aplikasi sebaiknya diuji dan diverifikasi secara mandiri.
+   Keterbatasan AI & Perbaikan Manual:
+   - Tampilan perlu diperbaiki secara manual dengan melihat langsung aplikasi yang berjalan
