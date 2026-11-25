@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
+import 'package:myportofolio_mobile/screens/experience_list_screen.dart';
 import 'package:myportofolio_mobile/screens/project_list_screen.dart';
 import 'package:myportofolio_mobile/services/auth_state.dart';
 import 'package:myportofolio_mobile/widgets/auth_guard.dart';
@@ -53,13 +54,27 @@ class ItemCard extends StatelessWidget {
             return;
           }
 
-          if (item.name == "Tambah Pengalaman") {
+          if (item.name == "Lihat Pengalaman") {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ExperienceFormPage(),
+                builder: (context) => const ExperienceListScreen(),
               ),
             );
+            return;
+          }
+
+          if (item.name == "Tambah Pengalaman") {
+            final canProceed = await ensureLoggedIn(context);
+            if (!context.mounted) return;
+            if (canProceed) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExperienceFormPage(),
+                ),
+              );
+            }
             return;
           }
 

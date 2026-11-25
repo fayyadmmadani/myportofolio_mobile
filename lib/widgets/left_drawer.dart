@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
+import 'package:myportofolio_mobile/screens/experience_list_screen.dart';
 import 'package:myportofolio_mobile/screens/project_list_screen.dart';
 import 'package:myportofolio_mobile/screens/login_screen.dart';
 import 'package:myportofolio_mobile/services/auth_state.dart';
@@ -63,6 +64,19 @@ class LeftDrawer extends StatelessWidget {
               );
             },
           ),
+          // Navigasi Experiences List
+          ListTile(
+            leading: const Icon(Icons.work_outline),
+            title: const Text('Achievements: Experiences'),
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExperienceListScreen(),
+                ),
+              );
+            },
+          ),
           // Navigasi Add Project (Terproteksi)
           ListTile(
             leading: const Icon(Icons.add_circle_outline),
@@ -79,17 +93,20 @@ class LeftDrawer extends StatelessWidget {
               }
             },
           ),
-          // Navigasi Add Experience
+          // Navigasi Add Experience (Terproteksi)
           ListTile(
             leading: const Icon(Icons.post_add),
             title: const Text('Add Experience'),
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ExperienceFormPage(),
-                ),
-              );
+            onTap: () async {
+              final canProceed = await ensureLoggedIn(context);
+              if (canProceed && context.mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ExperienceFormPage(),
+                  ),
+                );
+              }
             },
           ),
           // Opsi Login / Logout Dinamis

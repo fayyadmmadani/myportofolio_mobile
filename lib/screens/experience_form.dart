@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:myportofolio_mobile/models/experience.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:provider/provider.dart';
 
 class ExperienceFormPage extends StatefulWidget {
   const ExperienceFormPage({super.key});
@@ -12,51 +17,34 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
   final _formKey = GlobalKey<FormState>();
 
   String _title = "";
-  String _company = "";
-  String _experienceType = "Pekerjaan";
+  String _category = "internship";
+  String _thumbnail = "";
   String _description = "";
-  DateTime? _startDate;
   DateTime? _endDate;
-  final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _endDateController = TextEditingController();
   bool _isOngoing = false;
+  bool _isSubmitting = false;
 
-  final List<String> _typeList = [
-    'Pekerjaan',
-    'Magang',
-    'Organisasi',
-    'Kepanitiaan',
-    'Proyek Bebas',
+  final List<Map<String, String>> _categories = const [
+    {'value': 'internship', 'label': 'Internship (Magang)'},
+    {'value': 'research', 'label': 'Research (Riset)'},
+    {'value': 'volunteer', 'label': 'Volunteer (Relawan)'},
+    {'value': 'part-time', 'label': 'Part-Time (Paruh Waktu)'},
+    {'value': 'full-time', 'label': 'Full-Time (Purna Waktu)'},
+    {'value': 'freelance', 'label': 'Freelance'},
   ];
 
   @override
   void dispose() {
-    _startDateController.dispose();
     _endDateController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectStartDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _startDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        _startDate = picked;
-        _startDateController.text =
-            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
-      });
-    }
   }
 
   Future<void> _selectEndDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _endDate ?? (_startDate ?? DateTime.now()),
-      firstDate: _startDate ?? DateTime(2000),
+      initialDate: _endDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
     if (picked != null) {
@@ -65,6 +53,118 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
         _endDateController.text =
             "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final auth = context.read<AuthState>();
+    if (!auth.isLoggedIn) {
+      final loggedIn = await ensureLoggedIn(context);
+      if (!loggedIn || !mounted) return;
+    }
+
+    final token = context.read<AuthState>().token;
+    if (token == null) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final newExperience = Experience(
+      title: _title.trim(),
+      description: _description.trim(),
+      category: _category,
+      thumbnail: _thumbnail.trim(),
+      endedAt: _isOngoing ? null : _endDate,
+    );
+
+    try {
+      final created = await context.read<ApiClient>().createExperience(
+        newExperience,
+        token: token,
+      );
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Pengalaman Berhasil Ditambahkan!'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Judul: ${created.title}'),
+                  Text(
+                    'Kategori: ${created.categoryDisplay ?? created.category}',
+                  ),
+                  Text('Status: ${created.isOngoing ? "Ongoing" : "Finished"}'),
+                  if (created.thumbnail.isNotEmpty)
+                    Text('Thumbnail: ${created.thumbnail}'),
+                  Text('Deskripsi: ${created.description}'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _formKey.currentState!.reset();
+                  setState(() {
+                    _title = "";
+                    _category = "internship";
+                    _thumbnail = "";
+                    _description = "";
+                    _endDate = null;
+                    _endDateController.clear();
+                    _isOngoing = false;
+                  });
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 401) {
+        await context.read<AuthState>().logout();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi telah berakhir. Silakan login kembali.'),
+          ),
+        );
+        await ensureLoggedIn(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menambahkan pengalaman: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -80,15 +180,16 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. TextFormField Posisi / Role
+              // 1. Judul Pengalaman
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: TextFormField(
                   decoration: InputDecoration(
-                    hintText: "Judul Pengalaman",
+                    hintText: "Contoh: Software Engineer Intern",
                     labelText: "Judul Pengalaman",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
@@ -96,7 +197,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                   ),
                   onChanged: (String? value) {
                     setState(() {
-                      _title = value!;
+                      _title = value ?? "";
                     });
                   },
                   validator: (String? value) {
@@ -108,224 +209,142 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                 ),
               ),
 
-              // 2. TextFormField Instansi / Perusahaan
+              // 2. Kategori Pengalaman
               Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextFormField(
-                  decoration: InputDecoration(
-                    hintText: "Nama Instansi/Perusahaan",
-                    labelText: "Nama Instansi/Perusahaan",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ),
-                  onChanged: (String? value) {
-                    setState(() {
-                      _company = value!;
-                    });
-                  },
-                  validator: (String? value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "Nama instansi/perusahaan tidak boleh kosong!";
-                    }
-                    return null;
-                  },
-                ),
-              ),
-
-              // 3. DropdownButtonFormField Tipe Pengalaman
-              Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: DropdownButtonFormField<String>(
                   decoration: InputDecoration(
-                    labelText: "Tipe Pengalaman",
+                    labelText: "Kategori Pengalaman",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
-                  initialValue: _experienceType,
-                  items: _typeList
-                      .map(
-                        (category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        ),
-                      )
-                      .toList(),
+                  initialValue: _category,
+                  items: _categories.map((cat) {
+                    return DropdownMenuItem<String>(
+                      value: cat['value'],
+                      child: Text(cat['label']!),
+                    );
+                  }).toList(),
                   onChanged: (String? newValue) {
                     setState(() {
-                      _experienceType = newValue!;
+                      _category = newValue!;
                     });
                   },
                 ),
               ),
 
-              // 4. TextFormField Deskripsi Pengalaman (maxLines: 4)
+              // 3. Thumbnail URL (Opsional)
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: TextFormField(
-                  maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: "Deskripsi Pengalaman",
-                    labelText: "Deskripsi Pengalaman",
+                    hintText: "https://example.com/image.png",
+                    labelText: "Thumbnail URL (Opsional)",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
                   onChanged: (String? value) {
                     setState(() {
-                      _description = value!;
-                    });
-                  },
-                  validator: (String? value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "Deskripsi pengalaman tidak boleh kosong!";
-                    }
-                    return null;
-                  },
-                ),
-              ),
-
-              // === Tanggal Mulai (showDatePicker) ===
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextFormField(
-                  controller: _startDateController,
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    hintText: "Pilih tanggal mulai",
-                    labelText: "Tanggal Mulai",
-                    suffixIcon: const Icon(Icons.calendar_month),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ),
-                  onTap: () => _selectStartDate(context),
-                  validator: (String? value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "Tanggal mulai tidak boleh kosong!";
-                    }
-                    return null;
-                  },
-                ),
-              ),
-
-              // === Checkbox Masih Berlangsung ===
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: CheckboxListTile(
-                  title: const Text("Masih berlangsung sampai saat ini"),
-                  value: _isOngoing,
-                  dense: true,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _isOngoing = value ?? false;
-                      if (_isOngoing) {
-                        _endDate = null;
-                        _endDateController.text = "Sekarang";
-                      } else {
-                        _endDateController.clear();
-                      }
+                      _thumbnail = value ?? "";
                     });
                   },
                 ),
               ),
 
-              // === Tanggal Selesai (showDatePicker, hanya aktif jika tidak berlangsung) ===
+              // 4. Masih Berlangsung Switch
+              SwitchListTile(
+                title: const Text("Pengalaman Masih Berlangsung?"),
+                value: _isOngoing,
+                activeThumbColor: Colors.indigo,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (bool value) {
+                  setState(() {
+                    _isOngoing = value;
+                    if (value) {
+                      _endDate = null;
+                      _endDateController.clear();
+                    }
+                  });
+                },
+              ),
+
+              // 5. Tanggal Berakhir (jika tidak ongoing)
               if (!_isOngoing)
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: TextFormField(
                     controller: _endDateController,
                     readOnly: true,
                     decoration: InputDecoration(
-                      hintText: "Pilih tanggal selesai",
-                      labelText: "Tanggal Selesai",
-                      suffixIcon: const Icon(Icons.calendar_month),
+                      hintText: "Pilih tanggal berakhir",
+                      labelText: "Tanggal Berakhir",
+                      suffixIcon: const Icon(Icons.calendar_today),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5.0),
                       ),
                     ),
                     onTap: () => _selectEndDate(context),
-                    validator: (String? value) {
-                      if (!_isOngoing &&
-                          (value == null || value.trim().isEmpty)) {
-                        return "Tanggal selesai tidak boleh kosong jika sudah berakhir!";
-                      }
-                      if (_startDate != null &&
-                          _endDate != null &&
-                          _endDate!.isBefore(_startDate!)) {
-                        return "Tanggal selesai tidak boleh sebelum tanggal mulai!";
-                      }
-                      return null;
-                    },
                   ),
                 ),
 
-              // 5. Tombol ElevatedButton (Simpan) -> showDialog AlertDialog jika valid
+              // 6. Deskripsi Pengalaman
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: TextFormField(
+                  decoration: InputDecoration(
+                    hintText: "Ceritakan tanggung jawab atau pencapaian Anda",
+                    labelText: "Deskripsi",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                  ),
+                  maxLines: 4,
+                  onChanged: (String? value) {
+                    setState(() {
+                      _description = value ?? "";
+                    });
+                  },
+                  validator: (String? value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Deskripsi tidak boleh kosong!";
+                    }
+                    return null;
+                  },
+                ),
+              ),
+
+              // 7. Tombol Simpan
+              const SizedBox(height: 16),
               Align(
                 alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
                   child: ElevatedButton(
-                    style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.all(Colors.indigo),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text(
-                                'Experience berhasil ditambahkan!',
-                              ),
-                              content: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Judul Pengalaman: $_title'),
-                                    Text('Nama Instansi/Perusahaan: $_company'),
-                                    Text(
-                                      'Kategori Pengalaman: $_experienceType',
-                                    ),
-                                    Text('Deskripsi: $_description'),
-                                    Text(
-                                      'Periode: ${_startDateController.text} s.d. ${_isOngoing ? "Sekarang (Masih Berlangsung)" : _endDateController.text}',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('OK'),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _formKey.currentState!.reset();
-                                    _startDateController.clear();
-                                    _endDateController.clear();
-                                    setState(() {
-                                      _startDate = null;
-                                      _endDate = null;
-                                      _isOngoing = false;
-                                    });
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-                    },
-                    child: const Text(
-                      "Save",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    onPressed: _isSubmitting ? null : _submit,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            "Simpan Pengalaman",
+                            style: TextStyle(fontSize: 16),
+                          ),
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
